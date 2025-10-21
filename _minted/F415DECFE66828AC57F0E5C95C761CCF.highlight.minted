@@ -1,0 +1,14 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{c+cm}{/*}\PYG{c+cm}{ Абстрактный запрос на получение}
+\PYG{c+cm}{статуса журнала на конкретную дату Y }\PYG{c+cm}{*/}
+\PYG{k}{SELECT}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{journal\PYGZus{}listings}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{version\PYGZus{}id}\PYG{+w}{ }\PYG{k}{IN}\PYG{+w}{ }\PYG{p}{(}
+\PYG{+w}{    }\PYG{k}{SELECT}\PYG{+w}{ }\PYG{n}{id}\PYG{+w}{ }\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{journal\PYGZus{}list\PYGZus{}versions}
+\PYG{+w}{    }\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{valid\PYGZus{}date}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{o}{=}\PYG{+w}{ }\PYG{n}{Y}
+\PYG{+w}{    }\PYG{k}{AND}\PYG{+w}{ }\PYG{n}{journal\PYGZus{}id}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}
+\PYG{+w}{        }\PYG{k}{SELECT}\PYG{+w}{ }\PYG{n}{id}\PYG{+w}{ }\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{journals}\PYG{+w}{ }\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{issn}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}X\PYGZsq{}}
+\PYG{+w}{    }\PYG{p}{)}
+\PYG{k}{AND}\PYG{+w}{ }\PYG{n}{date\PYGZus{}included}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{o}{=}\PYG{+w}{ }\PYG{n}{Y}
+\PYG{k}{AND}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{date\PYGZus{}excluded}\PYG{+w}{ }\PYG{k}{IS}\PYG{+w}{ }\PYG{k}{NULL}\PYG{+w}{ }\PYG{k}{OR}\PYG{+w}{ }\PYG{n}{date\PYGZus{}excluded}\PYG{+w}{ }\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{n}{Y}\PYG{p}{)}
+\PYG{p}{)}
+\end{MintedVerbatim}

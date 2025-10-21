@@ -4,6 +4,10 @@
 \setmainlanguage[numerals=cyrillic]{russian}
 \setotherlanguages{english}
 \usepackage{csquotes}
+\usepackage{minted}
+
+% Fix for Cyrillic font support - use system fonts
+\newfontfamily{\cyrillicfontsf}{Arial}
 
 \usepackage{xunicode} % some extra unicode support
 %\usepackage[utf8x]{inputenc}
@@ -11,23 +15,18 @@
 \usepackage{fontspec}
 \defaultfontfeatures{Ligatures=TeX}
 
-%\setromanfont{Charis SIL}
-%\setsansfont{Liberation Sans}
-%\setmonofont{PT Mono}
-%\setmainfont{Liberation Serif} % this allows to use sans-serif as default font
+% Font configuration - using system fonts for Cyrillic support
+\newfontfamily{\cyrillicfont}{Times New Roman}
+\setmainfont{Times New Roman}
+\newfontfamily{\cyrillicfonttt}{JetBrains Mono}
+\setmonofont{JetBrains Mono}
+
+% \setromanfont{Charis SIL}
+% % \setsansfont{Liberation Sans}
+% \setmonofont{PT Mono}
+% \setmainfont{Liberation Serif} % this allows to use sans-serif as default font
 
 \usepackage{ifplatform}
-
-\ifwindows
-  \newfontfamily{\cyrillicfont}{Times New Roman}
-  \setmainfont{Times New Roman}
-  \newfontfamily{\cyrillicfonttt}{Courier New}
-  \setmonofont{Courier New}
-\else
-  \setmainfont{Linux Libertine O}
-  \setsansfont{Linux Biolinum O}
-  \setmonofont[SmallCapsFont={Latin Modern Mono Caps}]{Latin Modern Mono Light}
-\fi
 
 %нумерация справа и колонтитулы справа вверху
 \usepackage{fancyhdr}
