@@ -76,13 +76,13 @@
 \captionsetup[figure]{justification=justified,name=Рисунок,singlelinecheck=on,font=onehalfspacing}
 
 \usepackage{titlesec}
-\titleformat{\chapter}[block]{\centering\normalfont\Large\bfseries}{\thechapter.}{1ex}{}{}
+\titleformat{\chapter}[block]{\raggedright\normalfont\Large\bfseries}{\thechapter.}{1ex}{}{}
 \titlespacing{\chapter}{0pt}{0em}{2em}
 
-\titleformat{\section}[block]{\normalfont\large\bfseries}{\thesection}{1ex}{}{}
+\titleformat{\section}[block]{\raggedright\normalfont\large\bfseries}{\thesection}{1ex}{}{}
 \titlespacing{\section}{0pt}{0em}{1ex}
 
-\titleformat{\subsection}[block]{\normalfont\normalsize\bfseries}{\thesubsection}{1ex}{}{}
+\titleformat{\subsection}[block]{\raggedright\normalfont\normalsize\bfseries}{\thesubsection}{1ex}{}{}
 \titlespacing{\section}{0pt}{0em}{1ex}
 
 	% paragraph и subparagraph -- в тексте, без отступов
@@ -120,9 +120,13 @@
 
 \usepackage[
   style=gost-numeric,
-  sorting=none,
+  sorting=ynty,
   language=auto,
-  autolang=other
+  autolang=other,
+  backend=biber,
+  bibencoding=utf8,
+  citestyle=gost-numeric,
+  bibstyle=gost-alphabetic
 ]{biblatex}
 \addbibresource{chapters/biblio.bib}
 
