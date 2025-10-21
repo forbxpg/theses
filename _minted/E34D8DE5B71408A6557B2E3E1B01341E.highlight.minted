@@ -1,0 +1,20 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Пример автоматической валидации данных\PYGZdq{}\PYGZdq{}\PYGZdq{}}
+
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{fastapi}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{FastAPI}\PYG{p}{,} \PYG{n}{Depends}
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{pydantic}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{BaseModel}
+
+\PYG{k}{class}\PYG{+w}{ }\PYG{n+nc}{Article}\PYG{p}{(}\PYG{n}{BaseModel}\PYG{p}{)}\PYG{p}{:}
+\PYG{+w}{    }\PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Модель валидации статьи.\PYGZdq{}\PYGZdq{}\PYGZdq{}}
+
+    \PYG{c+c1}{\PYGZsh{} Модель автоматически валидирует}
+    \PYG{c+c1}{\PYGZsh{} поля исходя из их типа данных.}
+    \PYG{n}{title}\PYG{p}{:} \PYG{n+nb}{str}
+    \PYG{n}{author}\PYG{p}{:} \PYG{n+nb}{str}
+
+\PYG{n}{article} \PYG{o}{=} \PYG{n}{Article}\PYG{p}{(}
+    \PYG{n}{title}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{,}
+    \PYG{n}{author}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{John Doe}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} \PYGZhy{}\PYGZgt{} ValidationError: 1 is not a valid string}
+\end{MintedVerbatim}
