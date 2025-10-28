@@ -1,0 +1,35 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{typing}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{Annotated}\PYG{p}{,} \PYG{n}{ABC}\PYG{p}{,} \PYG{n}{abstractmethod}
+
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{fastapi}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{FastAPI}\PYG{p}{,} \PYG{n}{Depends}
+
+\PYG{k}{class}\PYG{+w}{ }\PYG{n+nc}{AbstractValidationService}\PYG{p}{(}\PYG{n}{ABC}\PYG{p}{)}\PYG{p}{:}  \PYG{c+c1}{\PYGZsh{} Абстрактный интерфейс}
+    \PYG{n+nd}{@abstractmethod}
+    \PYG{k}{async} \PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{validate}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{,} \PYG{n}{article}\PYG{p}{:} \PYG{n}{Article}\PYG{p}{)} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}} \PYG{n}{ValidationResult}\PYG{p}{:}
+        \PYG{k}{pass}  \PYG{c+c1}{\PYGZsh{} Реализация в подклассах}
+
+
+\PYG{k}{class}\PYG{+w}{ }\PYG{n+nc}{FirstValidationService}\PYG{p}{(}\PYG{n}{AbstractValidationService}\PYG{p}{)}\PYG{p}{:}
+    \PYG{k}{async} \PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{validate}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{,} \PYG{n}{article}\PYG{p}{:} \PYG{n}{Article}\PYG{p}{)} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}} \PYG{n}{ValidationResult}\PYG{p}{:}
+        \PYG{c+c1}{\PYGZsh{} Логика валидации статьи}
+
+\PYG{k}{class}\PYG{+w}{ }\PYG{n+nc}{SecondValidationService}\PYG{p}{(}\PYG{n}{AbstractValidationService}\PYG{p}{)}\PYG{p}{:}
+    \PYG{k}{async} \PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{validate}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{,} \PYG{n}{article}\PYG{p}{:} \PYG{n}{Article}\PYG{p}{)} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}} \PYG{n}{ValidationResult}\PYG{p}{:}
+        \PYG{c+c1}{\PYGZsh{} Другая логика валидации статьи}
+
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{get\PYGZus{}validation\PYGZus{}service}\PYG{p}{(}
+    \PYG{n}{service\PYGZus{}type}\PYG{p}{:} \PYG{n}{Literal}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{first}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{second}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{]}
+\PYG{p}{)} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}} \PYG{n}{AbstractValidationService}\PYG{p}{:}
+    \PYG{k}{if} \PYG{n}{service\PYGZus{}type} \PYG{o}{==} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{first}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:}
+        \PYG{k}{return} \PYG{n}{FirstValidationService}\PYG{p}{(}\PYG{p}{)}
+    \PYG{k}{elif} \PYG{n}{service\PYGZus{}type} \PYG{o}{==} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{second}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:}
+        \PYG{k}{return} \PYG{n}{SecondValidationService}\PYG{p}{(}\PYG{p}{)}
+    \PYG{k}{raise} \PYG{n+ne}{ValueError}\PYG{p}{(}\PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{Invalid service type: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{service\PYGZus{}type}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{)}
+
+\PYG{n+nd}{@app}\PYG{o}{.}\PYG{n}{post}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{/api/validate}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+\PYG{k}{async} \PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{validate\PYGZus{}article}\PYG{p}{(}  \PYG{c+c1}{\PYGZsh{} DI\PYGZhy{}контейнер}
+    \PYG{n}{article}\PYG{p}{:} \PYG{n}{Article}\PYG{p}{,} \PYG{n}{validation\PYGZus{}service}\PYG{p}{:} \PYG{n}{Annotated}\PYG{p}{[}
+        \PYG{n}{AbstractValidationService}\PYG{p}{,} \PYG{n}{Depends}\PYG{p}{(}\PYG{n}{get\PYGZus{}validation\PYGZus{}service}\PYG{p}{)}
+    \PYG{p}{]}\PYG{p}{)} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}} \PYG{n}{ValidationResult}\PYG{p}{:}
+    \PYG{k}{return} \PYG{k}{await} \PYG{n}{validation\PYGZus{}service}\PYG{o}{.}\PYG{n}{validate}\PYG{p}{(}\PYG{n}{article}\PYG{p}{)}
+\end{MintedVerbatim}
