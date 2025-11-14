@@ -1,0 +1,25 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{fastapi}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{FastAPI}\PYG{p}{,} \PYG{n}{Depends}
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{typing}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{Annotated}\PYG{p}{,} \PYG{n}{AsyncContextManager}
+
+\PYG{n}{app} \PYG{o}{=} \PYG{n}{FastAPI}\PYG{p}{(}\PYG{p}{)}
+
+\PYG{k}{async} \PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{get\PYGZus{}uow}\PYG{p}{(}\PYG{p}{)} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}} \PYG{n}{AsyncContextManager}\PYG{p}{[}\PYG{n}{IUnitOfWork}\PYG{p}{]}\PYG{p}{:}
+\PYG{+w}{    }\PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Dependency для получения Unit of Work.\PYGZdq{}\PYGZdq{}\PYGZdq{}}
+    \PYG{k}{return} \PYG{n}{UnitOfWork}\PYG{p}{(}\PYG{n}{AsyncSessionLocal}\PYG{p}{)}
+
+\PYG{n+nd}{@app}\PYG{o}{.}\PYG{n}{post}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{/validate}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+\PYG{k}{async} \PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{validate\PYGZus{}article}\PYG{p}{(}
+    \PYG{n}{article}\PYG{p}{:} \PYG{n}{Article}\PYG{p}{,}
+    \PYG{n}{uow}\PYG{p}{:} \PYG{n}{Annotated}\PYG{p}{[}\PYG{n}{AsyncContextManager}\PYG{p}{[}\PYG{n}{IUnitOfWork}\PYG{p}{]}\PYG{p}{,} \PYG{n}{Depends}\PYG{p}{(}\PYG{n}{get\PYGZus{}uow}\PYG{p}{)}\PYG{p}{]}\PYG{p}{,}
+    \PYG{n}{validation\PYGZus{}service}\PYG{p}{:} \PYG{n}{Annotated}\PYG{p}{[}
+        \PYG{n}{ValidationService}\PYG{p}{,} \PYG{n}{Depends}\PYG{p}{(}\PYG{n}{get\PYGZus{}validation\PYGZus{}service}\PYG{p}{)}
+    \PYG{p}{]}
+\PYG{p}{)} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}} \PYG{n}{ValidationResult}\PYG{p}{:}
+    \PYG{k}{async} \PYG{k}{with} \PYG{n}{uow}\PYG{p}{:}
+        \PYG{n}{result} \PYG{o}{=} \PYG{k}{await} \PYG{n}{validation\PYGZus{}service}\PYG{o}{.}\PYG{n}{validate\PYGZus{}and\PYGZus{}log\PYGZus{}article}\PYG{p}{(}
+            \PYG{n}{article}
+        \PYG{p}{)}
+        \PYG{k}{await} \PYG{n}{uow}\PYG{o}{.}\PYG{n}{commit}\PYG{p}{(}\PYG{p}{)}
+        \PYG{k}{return} \PYG{n}{result}
+\end{MintedVerbatim}
