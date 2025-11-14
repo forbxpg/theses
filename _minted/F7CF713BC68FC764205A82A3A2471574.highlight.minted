@@ -1,0 +1,25 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Пример автоматической валидации данных\PYGZdq{}\PYGZdq{}\PYGZdq{}}
+
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{fastapi}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{FastAPI}
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{pydantic}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{BaseModel}\PYG{p}{,} \PYG{n}{Field}
+
+\PYG{k}{class}\PYG{+w}{ }\PYG{n+nc}{Article}\PYG{p}{(}\PYG{n}{BaseModel}\PYG{p}{)}\PYG{p}{:}
+\PYG{+w}{    }\PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Модель валидации статьи.\PYGZdq{}\PYGZdq{}\PYGZdq{}}
+    \PYG{n}{title}\PYG{p}{:} \PYG{n+nb}{str} \PYG{o}{=} \PYG{n}{Field}\PYG{p}{(}\PYG{o}{.}\PYG{o}{.}\PYG{o}{.}\PYG{p}{,} \PYG{n}{min\PYGZus{}length}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{,} \PYG{n}{max\PYGZus{}length}\PYG{o}{=}\PYG{l+m+mi}{500}\PYG{p}{)}
+    \PYG{n}{author}\PYG{p}{:} \PYG{n+nb}{str} \PYG{o}{=} \PYG{n}{Field}\PYG{p}{(}\PYG{o}{.}\PYG{o}{.}\PYG{o}{.}\PYG{p}{,} \PYG{n}{min\PYGZus{}length}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+    \PYG{n}{issn}\PYG{p}{:} \PYG{n+nb}{str} \PYG{o}{=} \PYG{n}{Field}\PYG{p}{(}\PYG{o}{.}\PYG{o}{.}\PYG{o}{.}\PYG{p}{,} \PYG{n}{pattern}\PYG{o}{=}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{\PYGZca{}}\PYG{l+s+s1}{\PYGZbs{}}\PYG{l+s+s1}{d}\PYG{l+s+si}{\PYGZob{}4\PYGZcb{}}\PYG{l+s+s1}{\PYGZhy{}}\PYG{l+s+s1}{\PYGZbs{}}\PYG{l+s+s1}{d}\PYG{l+s+si}{\PYGZob{}4\PYGZcb{}}\PYG{l+s+s1}{\PYGZdl{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+    \PYG{n}{publication\PYGZus{}date}\PYG{p}{:} \PYG{n}{date}
+
+\PYG{n}{app} \PYG{o}{=} \PYG{n}{FastAPI}\PYG{p}{(}\PYG{p}{)}
+
+\PYG{n+nd}{@app}\PYG{o}{.}\PYG{n}{post}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{/validate}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+\PYG{k}{async} \PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{validate\PYGZus{}article}\PYG{p}{(}
+    \PYG{n}{article}\PYG{p}{:} \PYG{n}{Article}\PYG{p}{,}
+    \PYG{n}{validation\PYGZus{}service}\PYG{p}{:} \PYG{n}{Annotated}\PYG{p}{[}
+        \PYG{n}{AbstractValidationService}\PYG{p}{,} \PYG{n}{Depends}\PYG{p}{(}\PYG{n}{get\PYGZus{}validation\PYGZus{}service}\PYG{p}{)}
+    \PYG{p}{]}
+\PYG{p}{)} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}} \PYG{n}{ValidationResult}\PYG{p}{:}
+    \PYG{c+c1}{\PYGZsh{} Данные автоматически валидируются при парсинге запроса}
+    \PYG{k}{return} \PYG{k}{await} \PYG{n}{validation\PYGZus{}service}\PYG{o}{.}\PYG{n}{validate}\PYG{p}{(}\PYG{n}{article}\PYG{p}{)}
+\end{MintedVerbatim}

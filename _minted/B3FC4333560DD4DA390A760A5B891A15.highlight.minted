@@ -1,0 +1,18 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kd}{class}\PYG{+w}{ }\PYG{n+nx}{ValidationService}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k}{async}\PYG{+w}{ }\PYG{n+nx}{validateArticle}\PYG{p}{(}\PYG{n+nx}{article}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{Article}\PYG{p}{)}\PYG{o}{:}\PYG{+w}{ }\PYG{n+nb}{Promise}\PYG{o}{\PYGZlt{}}
+\PYG{+w}{    }\PYG{n+nx}{ValidationResult}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{k+kd}{const}\PYG{+w}{ }\PYG{n+nx}{response}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k}{await}\PYG{+w}{ }\PYG{n+nx}{api}\PYG{p}{.}\PYG{n+nx}{post}\PYG{o}{\PYGZlt{}}\PYG{n+nx}{ValidationResult}\PYG{o}{\PYGZgt{}}\PYG{p}{(}
+\PYG{+w}{            }\PYG{l+s+s2}{\PYGZdq{}/validate\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nx}{article}
+\PYG{+w}{        }\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{        }\PYG{k}{return}\PYG{+w}{ }\PYG{n+nx}{response}\PYG{p}{.}\PYG{n+nx}{data}\PYG{p}{;}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{+w}{    }\PYG{k}{async}\PYG{+w}{ }\PYG{n+nx}{getValidations}\PYG{p}{(}\PYG{p}{)}\PYG{o}{:}\PYG{+w}{ }\PYG{n+nb}{Promise}\PYG{o}{\PYGZlt{}}\PYG{n+nx}{ValidationResult}\PYG{p}{[}\PYG{p}{]}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{k+kd}{const}\PYG{+w}{ }\PYG{n+nx}{response}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k}{await}\PYG{+w}{ }\PYG{n+nx}{api}\PYG{p}{.}\PYG{n+nx}{get}\PYG{o}{\PYGZlt{}}\PYG{n+nx}{ValidationResult}\PYG{p}{[}\PYG{p}{]}\PYG{o}{\PYGZgt{}}\PYG{p}{(}
+\PYG{+w}{            }\PYG{l+s+s2}{\PYGZdq{}/validations\PYGZdq{}}
+\PYG{+w}{        }\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{        }\PYG{k}{return}\PYG{+w}{ }\PYG{n+nx}{response}\PYG{p}{.}\PYG{n+nx}{data}\PYG{p}{;}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{+w}{    }\PYG{c+c1}{// Другие методы для работы с валидацией}
+\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}

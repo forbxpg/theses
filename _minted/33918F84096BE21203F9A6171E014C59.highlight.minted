@@ -1,0 +1,17 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k}{import}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nx}{create}\PYG{+w}{ }\PYG{p}{\PYGZcb{}}\PYG{+w}{ }\PYG{k+kr}{from}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}zustand\PYGZsq{}}\PYG{p}{;}
+
+\PYG{k+kd}{interface}\PYG{+w}{ }\PYG{n+nx}{ValidationStore}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{n+nx}{journals}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{Journal}\PYG{p}{[}\PYG{p}{]}\PYG{p}{;}
+\PYG{+w}{  }\PYG{n+nx}{selectedJournal}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{Journal}\PYG{+w}{ }\PYG{o}{|}\PYG{+w}{ }\PYG{k+kc}{null}\PYG{p}{;}
+\PYG{+w}{  }\PYG{n+nx}{setJournals}\PYG{o}{:}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nx}{journals}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{Journal}\PYG{p}{[}\PYG{p}{]}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{=\PYGZgt{}}\PYG{+w}{ }\PYG{o+ow}{void}\PYG{p}{;}
+\PYG{+w}{  }\PYG{n+nx}{setSelectedJournal}\PYG{o}{:}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nx}{journal}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{Journal}\PYG{+w}{ }\PYG{o}{|}\PYG{+w}{ }\PYG{k+kc}{null}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{=\PYGZgt{}}\PYG{+w}{ }\PYG{o+ow}{void}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{k}{export}\PYG{+w}{ }\PYG{k+kd}{const}\PYG{+w}{ }\PYG{n+nx}{useValidationStore}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nx}{create}\PYG{o}{\PYGZlt{}}\PYG{n+nx}{ValidationStore}\PYG{o}{\PYGZgt{}}\PYG{p}{(}\PYG{p}{(}\PYG{n+nx}{set}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{=\PYGZgt{}}\PYG{+w}{ }\PYG{p}{(}\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{n+nx}{journals}\PYG{o}{:}\PYG{+w}{ }\PYG{p}{[}\PYG{p}{]}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nx}{selectedJournal}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{null}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nx}{setJournals}\PYG{o}{:}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nx}{journals}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{=\PYGZgt{}}\PYG{+w}{ }\PYG{n+nx}{set}\PYG{p}{(}\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nx}{journals}\PYG{+w}{ }\PYG{p}{\PYGZcb{}}\PYG{p}{)}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nx}{setSelectedJournal}\PYG{o}{:}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nx}{journal}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{=\PYGZgt{}}\PYG{+w}{ }\PYG{n+nx}{set}\PYG{p}{(}\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nx}{selectedJournal}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{journal}\PYG{+w}{ }\PYG{p}{\PYGZcb{}}\PYG{p}{)}\PYG{p}{,}
+\PYG{p}{\PYGZcb{}}\PYG{p}{)}\PYG{p}{)}\PYG{p}{;}
+\end{MintedVerbatim}

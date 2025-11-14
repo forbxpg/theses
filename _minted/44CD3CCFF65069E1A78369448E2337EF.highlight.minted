@@ -1,0 +1,32 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k}{class}\PYG{+w}{ }\PYG{n+nc}{ValidationService}\PYG{p}{:}
+    \PYG{k}{def}\PYG{+w}{ }\PYG{n+nf+fm}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{,} \PYG{n}{uow}\PYG{p}{:} \PYG{n}{IUnitOfWork}\PYG{p}{,} \PYG{n}{doi\PYGZus{}service}\PYG{p}{:} \PYG{n}{IDoiService}\PYG{p}{)}\PYG{p}{:}
+        \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{\PYGZus{}uow} \PYG{o}{=} \PYG{n}{uow}
+        \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{\PYGZus{}doi\PYGZus{}service} \PYG{o}{=} \PYG{n}{doi\PYGZus{}service}
+
+    \PYG{k}{async} \PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{validate\PYGZus{}and\PYGZus{}log\PYGZus{}article}\PYG{p}{(}
+        \PYG{n+nb+bp}{self}\PYG{p}{,}
+        \PYG{n}{article}\PYG{p}{:} \PYG{n}{Article}
+    \PYG{p}{)} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}} \PYG{n}{ValidationResult}\PYG{p}{:}
+        \PYG{n}{journal\PYGZus{}repo} \PYG{o}{=} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{\PYGZus{}uow}\PYG{o}{.}\PYG{n}{get\PYGZus{}repository}\PYG{p}{(}\PYG{n}{JournalRepository}\PYG{p}{)}
+        \PYG{n}{journal} \PYG{o}{=} \PYG{k}{await} \PYG{n}{journal\PYGZus{}repo}\PYG{o}{.}\PYG{n}{get\PYGZus{}by\PYGZus{}issn}\PYG{p}{(}\PYG{n}{article}\PYG{o}{.}\PYG{n}{issn}\PYG{p}{)}
+        \PYG{k}{if} \PYG{o+ow}{not} \PYG{n}{journal}\PYG{p}{:}
+            \PYG{k}{return} \PYG{n}{ValidationResult}\PYG{p}{(}
+                \PYG{n}{is\PYGZus{}valid}\PYG{o}{=}\PYG{k+kc}{False}\PYG{p}{,}
+                \PYG{n}{reason}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{Журнал не найден}\PYG{l+s+s2}{\PYGZdq{}}
+            \PYG{p}{)}
+
+        \PYG{n}{validation\PYGZus{}result} \PYG{o}{=} \PYG{k}{await} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{\PYGZus{}validate\PYGZus{}publication\PYGZus{}date}\PYG{p}{(}
+            \PYG{n}{journal}\PYG{p}{,} \PYG{n}{article}\PYG{o}{.}\PYG{n}{publication\PYGZus{}date}
+        \PYG{p}{)}
+        \PYG{c+c1}{\PYGZsh{} Логирование результата валидации в рамках той же транзакции}
+        \PYG{n}{logging\PYGZus{}repo} \PYG{o}{=} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{\PYGZus{}uow}\PYG{o}{.}\PYG{n}{get\PYGZus{}repository}\PYG{p}{(}\PYG{n}{LoggingRepository}\PYG{p}{)}
+        \PYG{k}{await} \PYG{n}{logging\PYGZus{}repo}\PYG{o}{.}\PYG{n}{create\PYGZus{}validation\PYGZus{}log}\PYG{p}{(}
+            \PYG{n}{article}\PYG{o}{=}\PYG{n}{article}\PYG{p}{,}
+            \PYG{n}{result}\PYG{o}{=}\PYG{n}{validation\PYGZus{}result}\PYG{p}{,}
+            \PYG{n}{timestamp}\PYG{o}{=}\PYG{n}{datetime}\PYG{o}{.}\PYG{n}{now}\PYG{p}{(}\PYG{p}{)}
+        \PYG{p}{)}
+        \PYG{c+c1}{\PYGZsh{} Сохранение всех изменений атомарно}
+        \PYG{k}{await} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{\PYGZus{}uow}\PYG{o}{.}\PYG{n}{commit}\PYG{p}{(}\PYG{p}{)}
+        \PYG{k}{return} \PYG{n}{validation\PYGZus{}result}
+\end{MintedVerbatim}

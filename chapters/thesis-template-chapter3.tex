@@ -1,47 +1,686 @@
-\chapter{Результаты проектирования \dots}
+\chapter{Проектирование системы автоматической валидации научных публикаций}
 
-В этой главе описывается, что и как было спроектировано. При необходимости, описывается использованная методика проектирования. Сюда же относится описание внешних и внутренних программных интерфейсов, а также форматы и структуры входных и выходных данных.
+В настоящей главе представлены детальные результаты проектирования системы автоматической валидации научных публикаций. 
+Сформулированы функциональные требования, включающие возможности загрузки и парсинга перечней ВАК, валидации публикаций по 
+ISSN и дате, поиска журналов по специальностям, просмотра истории изменений перечня. Разработаны диаграммы вариантов использования 
+(use case), описывающие сценарии работы различных категорий пользователей. 
+Представлена трёхуровневая архитектура системы (presentation layer, business logic layer, data layer) с детализацией компонентов 
+каждого уровня и протоколов их взаимодействия. 
+Спроектирована физическая модель базы данных, включающая схему таблиц с индексами, внешними ключами и триггерами для 
+поддержки версионности и обеспечения целостности данных. Обоснован выбор технологического стека: Python 3.11+ с фреймворком FastAPI 
+для реализации REST API, React для frontend-части сервиса, а также выбор СУБД PostgreSQL. Детально описаны проектные решения 
+по организации модульной архитектуры backend с применением паттернов Dependency 
+Injection, Repository и Service Layer, обеспечивающих тестируемость и поддерживаемость кода.
+
+\section{Функциональные и нефункциональные требования к системе}
+
+\begin{annotation}
+	Раздел содержит формализованные функциональные и нефункциональные требования к системе автоматической валидации научных публикаций. 
+	Представлены требования к загрузке и парсингу перечней ВАК, валидации публикаций по различным критериям, REST API эндпоинтам, 
+	а также требования к производительности, надёжности, масштабируемости, безопасности и удобству использования системы.
+\end{annotation}
+
+\subsection{Функциональные требования}
+
+Функциональные требования определяют конкретные возможности системы, которые должны быть реализованы для выполнения задач валидации научных публикаций.
+
+\subsubsection{Требования к загрузке и парсингу перечней ВАК}
+
+\begin{compactenum}
+	\item \textbf{FR-1.1: Загрузка PDF-документов перечня ВАК.} Система должна обеспечивать как возможность загрузки PDF-файлов через веб-интерфейс, так и автоматический парсинг перечней ВАК из официального источника в качестве background task (задачи, выполняемые в фоновом режиме).
+	\item \textbf{FR-1.2: Парсинг PDF-документов.} Система должна автоматически извлекать информацию о журналах из загруженных PDF-документов с точностью не менее 99\%. Извлекаемые данные включают:
+	\begin{itemize}
+		\item Номер журнала в перечне ВАК;
+		\item Название журнала;
+		\item ISSN журнала (основной и электронный);
+		\item Специальности, по которым журнал включён в перечень;
+		\item Даты включения/исключения конкретной специальности, связанной с журналом из перечня.
+	\end{itemize}
+	\item \textbf{FR-1.3: Версионность перечней.} Система должна поддерживать хранение множественных версий перечня ВАК с указанием даты "по состоянию на" и временной метки загрузки.
+	\item \textbf{FR-1.4: Валидация загруженных данных.} Система должна проверять корректность извлечённых данных и сообщать об ошибках парсинга или несоответствии формата.
+\end{compactenum}
+
+\subsubsection{Требования к валидации публикаций}
+
+\begin{compactenum}
+	\item \textbf{FR-2.1: Валидация по ISSN.} Система должна проверять, был ли журнал с указанным ISSN включён в перечень ВАК.
+	\item \textbf{FR-2.2: Валидация по дате публикации.} Система должна проверять, был ли журнал включён в перечень ВАК на дату публикации статьи, учитывая временные интервалы включения/исключения журнала.
+	\item \textbf{FR-2.3: Валидация по специальности.} Система должна проверять, включён ли журнал в перечень по указанной специальности на дату публикации статьи.
+	\item \textbf{FR-2.4: Валидация по авторам.} Система должна проверять, соответствует ли запрашиваемый автор списку авторов, указанному в метаданных статьи из CrossRef API.
+	\item \textbf{FR-2.4: Полная валидация публикации.} Система должна выполнять комплексную проверку публикации по ISSN, дате публикации, авторам и специальности одновременно, возвращая детальный результат валидации с указанием причины несоответствия (если публикация не прошла проверку).
+\end{compactenum}
 
 
-\section{Использование методики <<такой-то>> для проектирования программных систем <<такого-то типа>>}
 
-\dots
+\subsubsection{Требования к REST API}
 
-\section{Общая архитектура системы \dots}
+\begin{compactenum}
+	\item \textbf{FR-4.1: Эндпоинт валидации публикации.} Система должна предоставлять REST API эндпоинт \texttt{POST /api/validate} для валидации научной публикации.
+	\item \textbf{FR-4.2: Эндпоинт получения журналов.} Система должна предоставлять REST API эндпоинт \texttt{GET /api/journals} для получения списка журналов с поддержкой пагинации и фильтрации.
+	\item \textbf{FR-4.3: Эндпоинт поиска журналов.} Система должна предоставлять REST API эндпоинт \texttt{GET /api/journals/search} для поиска журналов по различным критериям.
+	\item \textbf{FR-4.4: Эндпоинт загрузки перечня.} Система должна предоставлять REST API эндпоинт \texttt{POST /api/journal-lists} для загрузки новых версий перечня ВАК.
+	\item \textbf{FR-4.5: Документация API.} Система должна автоматически генерировать документацию API в формате OpenAPI (Swagger), доступную по адресу \texttt{/docs}.
+	\item \textbf{FR-4.6: Формат данных.} Все API-эндпоинты должны использовать формат JSON для обмена данными.
+\end{compactenum}
 
-\dots
+\subsection{Нефункциональные требования}
 
+Нефункциональные требования определяют качественные характеристики системы, которые не относятся к её функциональности.
 
-% Команда \texorpdfstring необходима, чтобы программа просмотра PDF документов
-% верно отображала текст формул в панели оглавления.
-% При отсутствии команды \texorpdfstring там, где она необходима, LaTeX выводит
-% предупреждение "Token not allowed in a PDF string"
-\section{Архитектура подсистемы \texorpdfstring{$1$}{1}\dots}
+\subsubsection{Требования к производительности}
 
-\dots
+\begin{compactenum}
+	\item \textbf{NFR-1.1: Время отклика API.} Время отклика API для валидации публикации не должно превышать 2 секунд при нормальной нагрузке.
+	\item \textbf{NFR-1.2: Пропускная способность.} Система должна обрабатывать не менее 100 запросов на валидацию в секунду при нормальной нагрузке.
+	\item \textbf{NFR-1.3: Время парсинга PDF.} Парсинг одного PDF-документа перечня ВАК не должен превышать 5 минут для документа размером до 1500 страниц.
+	\item \textbf{NFR-1.4: Время поиска.} Поиск журналов в базе данных должен выполняться не более чем за 1 секунду при количестве записей до 10,000 журналов.
+\end{compactenum}
 
+\subsubsection{Требования к надёжности}
 
-\section{Архитектура подсистемы \texorpdfstring{$N$}{N}\dots}
+\begin{compactenum}
+	\item \textbf{NFR-2.1: Доступность системы.} Система должна обеспечивать доступность не менее 99\% времени (uptime) в рабочее время.
+	\item \textbf{NFR-2.2: Обработка ошибок.} Система должна корректно обрабатывать все виды ошибок (ошибки парсинга, ошибки доступа к БД, ошибки внешних API) и возвращать понятные сообщения об ошибках пользователю.
+	\item \textbf{NFR-2.3: Целостность данных.} Система должна обеспечивать целостность данных в базе данных через использование транзакций, внешних ключей и ограничений.
+	\item \textbf{NFR-2.4: Резервное копирование.} Система должна обеспечивать возможность резервного копирования базы данных с частотой не реже одного раза в сутки.
+\end{compactenum}
 
-\dots
+\subsubsection{Требования к масштабируемости}
 
+\begin{compactenum}
+	\item \textbf{NFR-3.1: Масштабируемость базы данных.} Архитектура базы данных должна поддерживать хранение данных о не менее 10,000 журналов и 50 версиях перечня ВАК.
+	\item \textbf{NFR-3.2: Горизонтальное масштабирование.} Архитектура backend-части системы должна поддерживать горизонтальное масштабирование (добавление новых экземпляров сервера) без изменения кода приложения.
+	\item \textbf{NFR-3.3: Масштабируемость фронтенда.} Frontend-часть системы должна корректно работать при количестве одновременно подключённых пользователей до 1,000.
+\end{compactenum}
 
-\section{
-  Проектирование протокола взаимодействия подсистем \texorpdfstring{$X$}{X} и
-  \texorpdfstring{$Y$}{Y}
+\subsubsection{Требования к безопасности}
+
+\begin{compactenum}
+	\item \textbf{NFR-4.1: Валидация входных данных.} Система должна валидировать все входные данные для предотвращения SQL-инъекций, XSS-атак и других видов уязвимостей.
+	\item \textbf{NFR-4.2: Ограничение размера файлов.} Система должна ограничивать размер загружаемых PDF-файлов до 50 МБ.
+	\item \textbf{NFR-4.3: Защита от злоупотреблений.} Система должна реализовывать механизмы защиты от злоупотреблений (rate limiting) для предотвращения перегрузки API.
+	\item \textbf{NFR-4.4: Безопасное хранение данных.} Все данные должны храниться в базе данных с использованием современных методов шифрования.
+\end{compactenum}
+
+\subsubsection{Требования к удобству использования}
+
+\begin{compactenum}
+	\item \textbf{NFR-5.1: Пользовательский интерфейс.} Веб-интерфейс системы должен быть интуитивно понятным и удобным для использования без необходимости обучения.
+	\item \textbf{NFR-5.2: Адаптивность интерфейса.} Веб-интерфейс должен корректно отображаться на различных устройствах (десктоп, планшет, мобильные устройства).
+	\item \textbf{NFR-5.3: Сообщения об ошибках.} Все сообщения об ошибках должны быть понятными и информативными для пользователя.
+	\item \textbf{NFR-5.4: Документация.} Система должна предоставлять понятную документацию по использованию API и веб-интерфейса.
+\end{compactenum}
+
+\subsection{Требования к интерфейсам}
+
+\subsubsection{Пользовательский интерфейс}
+
+Веб-интерфейс системы должен предоставлять следующие возможности:
+\begin{itemize}
+    \item Аутентификация и авторизация пользователей;
+	\item Форма для ввода данных статьи (ISSN, название, автор, дата публикации, специальность);
+	\item Отображение результата валидации с детальной информацией;
+	\item Пагинированный список последних валидаций статей пользователя;
+	\item Просмотр метаданных валидируемой статьи;
+	\item Форма для загрузки новых версий перечня (для администраторов).
+\end{itemize}
+
+\subsubsection{Интерфейс REST API}
+
+REST API должен предоставлять следующие основные эндпоинты:
+\begin{itemize}
+    \item \texttt{POST /auth/login} --- аутентификация пользователя;
+    \item  \texttt{POST /auth/register} --- регистрация нового пользователя;
+	\item \texttt{POST /validate} --- валидация публикации;
+	\item \texttt{GET /validations} --- получение списка валидаций;
+	\item \texttt{GET /validations/{id}} --- получение информации о конкретной валидации;
+	\item \texttt{POST /admin/import} --- загрузка новой версии перечня;
+	\item \texttt{GET /docs} --- интерактивная документация API (Swagger UI/ReDoc).
+\end{itemize}
+
+\section{Техническая реализация backend-части системы}
+
+\begin{annotation}
+	Раздел описывает техническую реализацию серверной части системы на основе Python и FastAPI. 
+	Представлено обоснование выбора технологий с детальным описанием используемых библиотек для парсинга PDF, работы с базой данных, 
+	интеграции с внешними API. Описаны ключевые возможности FastAPI: асинхронность, автоматическая валидация данных, 
+	инъекция зависимостей и гибкость при работе с базами данных с примерами кода реализации.
+\end{annotation}
+
+\subsection{Детальное обоснование выбора Python}
+
+Python выбран для реализации серверной части системы благодаря широкому набору специализированных библиотек и зрелой инфраструктуре 
+для построения REST API \cite{modern-python,solid-principles-article, indonesian}. Ниже представлены конкретные библиотеки и их применение в системе:
+
+\subsubsection{Интеграция с CrossRef API}
+
+Для работы с CrossRef API используются следующие библиотеки:
+\begin{itemize}
+	\item \textbf{habanero, crossrefapi, crossref-commons:} официальные библиотеки для работы с CrossRef API;
+	\item Стандартные структуры данных Python (dict, list) для простой работы с JSON-объектами;
+	\item Библиотеки \texttt{aiohttp} и \texttt{httpx} для асинхронных HTTP-запросов.
+\end{itemize}
+
+\subsubsection{Фреймворки для разработки веб-сервисов}
+
+Для реализации REST API применяется следующий стек:
+\begin{itemize}
+	\item \textbf{FastAPI:} современный, асинхронный фреймворк для разработки RESTful API и микросервисов;
+	\item \textbf{SQLAlchemy:} ORM для работы с реляционной базой данных PostgreSQL;
+	\item \textbf{Alembic:} инструмент для миграций базы данных;
+	\item \textbf{Pydantic:} библиотека для валидации данных и автоматической генерации схем.
+\end{itemize}
+
+\subsubsection{Экосистема для парсинга данных}
+
+Для парсинга PDF-документов перечней ВАК используются следующие библиотеки:
+\begin{itemize}
+	\item \textbf{pdfplumber:} библиотека для извлечения текста и таблиц из PDF;
+	\item \textbf{pdfminer.six:} низкоуровневая библиотека для парсинга структуры PDF;
+	\item \textbf{PyPDF2:} альтернативная библиотека для работы с PDF-документами.
+\end{itemize}
+
+Для парсинга веб-сайтов и работы с API:
+\begin{itemize}
+	\item \textbf{BeautifulSoup:} библиотека для парсинга HTML;
+	\item \textbf{Playwright:} инструмент для автоматизации браузера при необходимости парсинга динамического контента;
+	\item \textbf{Scrapy:} фреймворк для веб-скрапинга.
+\end{itemize}
+
+\subsubsection{Параллельные вычисления и асинхронность}
+
+Для обеспечения высокой производительности используются:
+\begin{itemize}
+	\item \textbf{asyncio:} стандартная библиотека для асинхронного программирования;
+	\item \textbf{Uvicorn, Hypercorn:} ASGI-серверы для запуска FastAPI-приложения;
+	\item \textbf{WebSocket (socketio, websockets):} для двунаправленной связи между клиентом и сервером;
+	\item \textbf{multiprocessing, threading:} для параллельной обработки данных при парсинге.
+\end{itemize}
+
+\subsection{Детальная реализация FastAPI}
+
+\subsubsection{Асинхронность из "коробки"}
+
+FastAPI поддерживает асинхронную обработку запросов из "коробки", что критически важно для I/O-bound задач 
+(запросы к API, взаимодействие с БД, парсинг файлов). Пример реализации асинхронного эндпоинта:
+
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{python}
+from fastapi import FastAPI, Depends
+
+app = FastAPI()
+
+@app.post('/validate')
+async def validate_article(
+    article: Article, 
+    doi_service: Annotated[DoiService, Depends(get_doi_service)],
+    validation_service: Annotated[
+        ValidationService, Depends(get_validation_service)
+    ],
+    logging_service: Annotated[
+        LoggingService, Depends(get_logging_service)
+    ]
+) -> ResponseSchema:
+    article_data = await doi_service.fetch_article_data(article)
+    validation_result = await validation_service.validate_article(
+        article_data,
+    )
+    return validation_result
+\end{minted}
+
+\subsubsection{Автоматическая валидация данных}
+
+FastAPI использует библиотеку Pydantic для автоматической валидации и преобразования данных (JSON $\leftrightarrow$ Python):
+
+\begin{minted}[fontsize=\small, frame=lines, framesep=4mm]{python}
+"""Пример автоматической валидации данных"""
+
+from fastapi import FastAPI
+from pydantic import BaseModel, Field
+
+class Article(BaseModel):
+    """Модель валидации статьи."""
+    title: str = Field(..., min_length=1, max_length=500)
+    author: str = Field(..., min_length=1)
+    issn: str = Field(..., pattern=r'^\d{4}-\d{4}$')
+    publication_date: date
+
+app = FastAPI()
+
+@app.post('/validate')
+async def validate_article(
+    article: Article,
+    validation_service: Annotated[
+        AbstractValidationService, Depends(get_validation_service)
+    ]
+) -> ValidationResult:
+    # Данные автоматически валидируются при парсинге запроса
+    return await validation_service.validate(article)
+\end{minted}
+
+FastAPI автоматически генерирует документацию в формате OpenAPI (Swagger), доступную по адресу \texttt{/docs}, 
+где можно интерактивно тестировать все API-эндпоинты.
+
+\subsubsection{Инъекция зависимостей}
+
+FastAPI поддерживает паттерн Dependency Injection (DI) для обеспечения модульности и тестируемости кода \cite{solid-principles-article,fastapi-bill, business-laguna}. 
+Пример реализации DI с использованием абстрактных интерфейсов:
+
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{python}
+from typing import Annotated, ABC, abstractmethod
+from fastapi import FastAPI, Depends
+
+class AbstractValidationService(ABC):  # Абстрактный интерфейс
+    @abstractmethod
+    async def validate(self, article: Article) -> ValidationResult:
+        pass  # Реализация в подклассах
+
+class FirstValidationService(AbstractValidationService):
+    async def validate(self, article: Article) -> ValidationResult:
+        # Логика валидации статьи
+        
+class SecondValidationService(AbstractValidationService):
+    async def validate(self, article: Article) -> ValidationResult:
+        # Другая логика валидации статьи
+
+def get_validation_service(
+    service_type: Literal["first", "second"] = "first"
+) -> AbstractValidationService:
+    if service_type == "first":
+        return FirstValidationService()
+    elif service_type == "second":
+        return SecondValidationService()
+    raise ValueError(f"Invalid service type: {service_type}")
+
+@app.post('/api/validate')
+async def validate_article(  # DI-контейнер
+    article: Article, 
+    validation_service: Annotated[
+        AbstractValidationService, Depends(get_validation_service)  
+    ]
+) -> ValidationResult:
+    return await validation_service.validate(article)
+\end{minted}
+
+\subsubsection{Гибкость при работе с базами данных}
+
+FastAPI не навязывает работу с конкретной ORM, что позволяет выбрать наиболее подходящее решение. 
+В системе используется SQLAlchemy в сочетании с асинхронным драйвером \texttt{asyncpg} для PostgreSQL:
+
+\begin{minted}[fontsize=\small, frame=lines, framesep=4mm]{python}
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
+# Создание асинхронного движка БД
+engine = create_async_engine(
+    "postgresql+asyncpg://user:password@localhost/dbname",
+    echo=True
+)
+
+# Создание сессии
+AsyncSessionLocal = sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
+
+async def get_db() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        yield session
+
+@app.post('/journals')
+async def create_journal(
+    journal: JournalCreate,
+    db: Annotated[AsyncSession, Depends(get_db)]
+) -> JournalResponse:
+    db_journal = Journal(**journal.model_dump())
+    db.add(db_journal)
+    await db.commit()
+    await db.refresh(db_journal)
+    return JournalResponse.model_validate(db_journal, 
+                                          from_attributes=True)
+\end{minted}
+
+\section{Техническая реализация frontend-части системы}
+
+\begin{annotation}
+	Раздел описывает техническую реализацию клиентской части системы на основе библиотеки React. Описана архитектура React-приложения: 
+	структура компонентов, управление состоянием, интеграция с Backend API через Axios. 
+	Приведены примеры реализации компонентов для валидации публикаций и отображения результатов с описанием их интеграции.
+\end{annotation}
+
+\subsection{Детальное обоснование выбора React}
+
+React выбран для реализации клиентской части системы на основе анализа метрик State of JavaScript 2024 \cite{state-of-javascript}:
+
+\subsubsection{Метрики популярности}
+
+По данным State of JavaScript 2024, React занимает лидирующую позицию:
+\begin{itemize}
+	\item \textbf{Awareness:} 99\% --- практически все разработчики знают о React;
+	\item \textbf{Usage:} 82\% --- используется в 82\% проектов;
+	\item \textbf{Satisfaction:} 74\% --- высокий уровень удовлетворённости;
+	\item \textbf{Interest:} 37\% --- высокий интерес к изучению;
+	\item \textbf{Positivity:} 69\% --- большинство разработчиков считают использование React положительным опытом.
+\end{itemize}
+
+\subsubsection{Преимущества React для системы валидации}
+
+\begin{compactenum}
+	\item \textbf{Компонентный подход:} Модульная архитектура позволяет создавать переиспользуемые компоненты для валидации публикаций, отображения журналов и управления перечнями.
+	\item \textbf{Virtual DOM:} Обеспечивает высокую производительность при частом обновлении интерфейса, что критично для системы с динамическим поиском и фильтрацией.
+	\item \textbf{TypeScript поддержка:} Возможность использования TypeScript для обеспечения типобезопасности.
+\end{compactenum}
+
+\subsection{Архитектура React-приложения}
+
+\subsubsection{Структура компонентов}
+
+Приложение организовано по модульному принципу:
+
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{react}
+// Компонент для валидации статьи
+interface ArticleValidationProps {
+  onSubmit: (article: Article) => Promise<ValidationResult>;
 }
 
-\dots
+export const ArticleValidation: React.FC<ArticleValidationProps> = ({ 
+    onSubmit 
+}) => {
+  const [article, setArticle] = useState<Article>({
+    title: '',
+    author: '',
+    issn: '',
+    publicationDate: ''
+  });
+  const [result, setResult] = useState<ValidationResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const validationResult = await onSubmit(article);
+      setResult(validationResult);
+    } finally {setLoading(false);}
+  };
+  return (
+    <form onSubmit={handleSubmit}>
+      <button type="submit" disabled={loading}>
+        {loading ? 'Проверка...' : 'Проверить'}
+      </button>
+      {result && <ValidationResultDisplay result={result} />}
+    </form>
+  );
+};
+\end{minted}
+
+\subsubsection{Управление состоянием}
+
+Для управления состоянием приложения используется React Context API и библиотека Zustand:
+
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{typescript}
+import { create } from 'zustand';
+
+interface ValidationStore {
+  journals: Journal[];
+  selectedJournal: Journal | null;
+  setJournals: (journals: Journal[]) => void;
+  setSelectedJournal: (journal: Journal | null) => void;
+}
+
+export const useValidationStore = create<ValidationStore>((set) => ({
+  journals: [],
+  selectedJournal: null,
+  setJournals: (journals) => set({ journals }),
+  setSelectedJournal: (journal) => set({ selectedJournal: journal }),
+}));
+\end{minted}
+
+\subsubsection{Интеграция с Backend API}
+
+Для взаимодействия с REST API используется библиотека Axios:
+
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{typescript}
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://localhost:8000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true,
+});
+
+\end{minted}
 
 
-\section{Выводы}
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{typescript}
+class ValidationService {
+    async validateArticle(article: Article): Promise<
+    ValidationResult> {
+        const response = await api.post<ValidationResult>(
+            "/validate", article
+        );
+        return response.data;
+    }
+    async getValidations(): Promise<ValidationResult[]> {
+        const response = await api.get<ValidationResult[]>(
+            "/validations"
+        );
+        return response.data;
+    }
+    // Другие методы для работы с валидацией
+}
+\end{minted}
 
-Следует перечислить, какие инженерные результаты были получены, а именно: 
-какие программные системы, подсистемы или модули были спроектированы. Следует 
-не только назвать полученные архитектуры, но и отметить их отличительные 
-особенности.
 
-%%% Local Variables:
-%%% TeX-engine: xetex
-%%% eval: (setq-local TeX-master (concat "../" (seq-find (-cut string-match ".*-3-pz\.tex$" <>) (directory-files ".."))))
-%%% End:
+\subsection*{Интеграция компонентов}
+
+Все компоненты интегрируются через главный компонент приложения:
+
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{react}
+export const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<ArticleValidation />} />
+          <Route path="validations" element={<ValidationList />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+};
+\end{minted}
+
+\newpage
+
+Такая архитектура обеспечивает:
+\begin{itemize}
+	\item \textbf{Модульность:} каждый компонент отвечает за отдельную функциональность;
+	\item \textbf{Переиспользуемость:} компоненты могут использоваться в разных частях приложения;
+	\item \textbf{Тестируемость:} каждый компонент можно тестировать изолированно;
+	\item \textbf{Масштабируемость:} легко добавлять новые компоненты и функциональность.
+\end{itemize}
+
+\section{Архитектура приложения}
+
+\begin{annotation}
+	Раздел описывает архитектуру системы, основанную на принципах Domain Driven Design с применением паттерна Unit of Work. 
+	Представлены ключевые сущности предметной области и их взаимосвязи. Детально описан паттерн Unit of Work: его основные функции, 
+	интеграция с паттерном Repository, реализация на основе асинхронной сессии SQLAlchemy с примерами кода. 
+	Описаны преимущества применения Unit of Work и его интеграция с механизмом Dependency Injection FastAPI.
+\end{annotation}
+
+\subsection{Domain Driven Design в контексте системы валидации}
+
+Domain Driven Design представляет собой подход к разработке программного обеспечения, в котором основное внимание уделяется моделированию предметной области (domain) \cite{learning-ddd, refactoring-guru-design-patterns}. В контексте системы автоматической валидации научных публикаций предметная область включает следующие ключевые сущности:
+
+\begin{itemize}
+	\item \textbf{Journal (Журнал):} основная сущность, представляющая научное издание с его атрибутами (ISSN, название, номер журнала в перечне ВАК);
+	\item \textbf{Specility (Научная специальность):} сущность, описывающая область науки, по которой журнал включён в перечень;
+	\item \textbf{JournalVersion (Версия перечня):} сущность, представляющая версию официального перечня ВАК на определённую дату;
+	\item \textbf{JournalSpeciality (Включение журнала в перечень):} сущность, связыющая журнал, специальности и временной интервал включения/исключения журнала в перечень.
+	\item \textbf{ArticleValidation (Валидация статьи):} сущность, связывающая статью, журнал, результат и метаданные о валидации.
+\end{itemize}
+
+Применение DDD в системе валидации обеспечивает:
+
+\begin{compactenum}
+	\item \textbf{Ясность бизнес-логики:} сложная логика валидации публикаций инкапсулируется в доменных сервисах и сущностях \cite{learning-ddd, refactoring-guru-design-patterns}, что делает код более понятным и поддерживаемым;
+	\item \textbf{Изоляцию предметной области:} бизнес-логика отделена от технических деталей реализации (база данных, веб-фреймворк), что упрощает тестирование и модификацию;
+	\item \textbf{Универсальный язык:} использование терминов предметной области (ВАК, перечень, валидация, специальность) создаёт единый язык общения между разработчиками и экспертами предметной области.
+\end{compactenum}
+
+\subsection{Паттерн Unit of Work}
+
+Паттерн Unit of Work (Единица работы) является ключевым элементом архитектуры, основанной на принципах Domain Driven Design \cite{unit-of-work, refactoring-guru-design-patterns}. Он служит для координации операций, выполняемых над объектами домена, обеспечивая их согласованность и целостность в рамках одной транзакции.
+
+\subsubsection{Основные функции паттерна Unit of Work}
+
+Паттерн Unit of Work выполняет следующие функции:
+
+\begin{compactenum}
+	\item \textbf{Отслеживание изменений:} Unit of Work следит за состоянием объектов, загруженных из базы данных, фиксируя их изменения, добавления или удаления. Все операции над доменными объектами регистрируются в контексте единицы работы \cite{unit-of-work}.
+	
+	\item \textbf{Управление транзакциями:} Паттерн гарантирует, что все изменения, внесённые в объекты домена, будут сохранены в базе данных в рамках одной транзакции, обеспечивая атомарность и согласованность данных. При возникновении ошибки все изменения откатываются.
+	
+	\item \textbf{Оптимизация производительности:} Объединяя несколько операций в одну транзакцию, Unit of Work снижает количество обращений к базе данных, что повышает эффективность работы приложения. Например, при валидации множества публикаций все изменения могут быть сохранены одним вызовом метода \texttt{commit()}.
+\end{compactenum}
+
+\subsubsection{Интеграция Unit of Work с паттерном Repository}
+
+В контексте Domain Driven Design, Unit of Work часто используется совместно с паттерном Repository \cite{indonesian}. Репозитории предоставляют абстракцию для доступа к данным, а Unit of Work управляет изменениями этих данных, обеспечивая их согласное сохранение. Такой подход способствует чёткому разделению ответственности и упрощает тестирование и сопровождение кода \cite{db-accesss, refactoring-guru-design-patterns, unit-of-work}.
+
+\subsubsection{Реализация Unit of Work в системе валидации}
+
+В системе валидации научных публикаций паттерн Unit of Work реализован на основе асинхронной сессии SQLAlchemy. Ниже представлена структура реализации:
+
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{python}
+from abc import ABC, abstractmethod
+from typing import AsyncContextManager
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+class UnitOfWork(IUnitOfWork):
+    """Реализация единицы работы с использованием AsyncSession."""
+    
+    def __init__(self, session_factory: AsyncSession):
+        self._session_factory = session_factory
+        self._session: AsyncSession | None = None
+        self._repositories: dict[Type[IRepository], IRepository] = {}
+
+    async def commit(self) -> None:
+        if self._session is None:
+            raise RuntimeError("Session is not initialized")
+        await self._session.commit()
+    
+    async def rollback(self) -> None:
+        if self._session is None:
+            raise RuntimeError("Session is not initialized")
+        await self._session.rollback()
+    
+    def get_repository(self, repository_type: Type[IRepository]):
+        """Получение репозитория для использования в сервисах."""
+        if repository_type not in self._repositories:
+            self._repositories[repository_type] = repository_type(
+                self._session,
+            )
+        return self._repositories[repository_type]
+\end{minted}
+
+\newpage
+\subsubsection{Применение Unit of Work в сервисном слое}
+
+
+Пример использования Unit of Work в сервисе валидации:
+
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{python}
+class ValidationService:
+    def __init__(self, uow: IUnitOfWork, doi_service: IDoiService):
+        self._uow = uow
+        self._doi_service = doi_service
+    
+    async def validate_and_log_article(
+        self, 
+        article: Article
+    ) -> ValidationResult:
+        journal_repo = self._uow.get_repository(JournalRepository)
+        journal = await journal_repo.get_by_issn(article.issn)
+        if not journal:
+            return ValidationResult(
+                is_valid=False, 
+                reason="Журнал не найден"
+            )
+
+        validation_result = await self._validate_publication_date(
+            journal, article.publication_date
+        )
+        # Логирование результата валидации в рамках той же транзакции
+        logging_repo = self._uow.get_repository(LoggingRepository)
+        await logging_repo.create_validation_log(
+            article=article,
+            result=validation_result,
+            timestamp=datetime.now()
+        )
+        # Сохранение всех изменений атомарно
+        await self._uow.commit()
+        return validation_result
+\end{minted}
+
+\subsection{Преимущества применения Unit of Work в системе}
+
+Применение паттерна Unit of Work в архитектуре системы валидации научных публикаций обеспечивает следующие преимущества:
+
+\begin{compactenum}
+	\item \textbf{Атомарность операций:} Все изменения, связанные с одной бизнес-операцией (например, валидация публикации и логирование результата), сохраняются в базе данных атомарно. При возникновении ошибки все изменения откатываются, что гарантирует целостность данных.
+	
+	\item \textbf{Упрощение управления транзакциями:} Разработчику не требуется явно управлять открытием и закрытием транзакций для каждой операции. Unit of Work инкапсулирует эту логику, предоставляя простой интерфейс через методы \texttt{commit()} и \texttt{rollback()}.
+	
+	\item \textbf{Повышение производительности:} Несколько операций с базой данных могут быть объединены в одну транзакцию, что уменьшает количество обращений к базе данных и улучшает общую производительность системы.
+	
+	\item \textbf{Улучшение тестируемости:} Unit of Work может быть легко заменён на mock-реализацию в тестах, что позволяет изолированно тестировать бизнес-логику без реального доступа к базе данных.
+	
+	\item \textbf{Согласованность данных:} Паттерн гарантирует, что все изменения, внесённые в рамках одной единицы работы, будут сохранены согласованно, что особенно важно для сложных операций, затрагивающих несколько сущностей домена \cite{db-accesss}.
+\end{compactenum}
+
+\subsection{Интеграция Unit of Work с Dependency Injection}
+
+В системе валидации Unit of Work интегрирован с механизмом Dependency Injection FastAPI, что обеспечивает прозрачное управление жизненным циклом транзакций:
+
+\begin{minted}[fontsize=\small, frame=single, framesep=4mm]{python}
+from fastapi import FastAPI, Depends
+from typing import Annotated, AsyncContextManager
+
+app = FastAPI()
+
+async def get_uow() -> AsyncContextManager[IUnitOfWork]:
+    """Dependency для получения Unit of Work."""
+    return UnitOfWork(AsyncSessionLocal)
+
+@app.post('/validate')
+async def validate_article(
+    article: Article,
+    uow: Annotated[AsyncContextManager[IUnitOfWork], Depends(get_uow)],
+    validation_service: Annotated[
+        ValidationService, Depends(get_validation_service)
+    ]
+) -> ValidationResult:
+    async with uow:
+        result = await validation_service.validate_and_log_article(
+            article
+        )
+        await uow.commit()
+        return result
+\end{minted}
+
+Такая архитектура обеспечивает согласованное применение паттерна Unit of Work во всём приложении и упрощает управление транзакциями в каждом API-эндпоинте.
+
+% \section{Диаграммы вариантов использования (Use Cases)}
+
+% \begin{annotation}
+% 	Раздел описывает диаграммы вариантов использования (Use Cases) системы автоматической валидации научных публикаций. 
+% 	Представлены основные сценарии работы различных категорий пользователей с системой: исследователей (валидация публикаций, 
+% 	просмотр истории валидаций), администраторов (загрузка и обработка перечней ВАК, управление системой), внешних систем 
+% 	(интеграция через REST API). Описаны акторы системы и их взаимодействие с функциональностью системы. Представлены диаграммы 
+% 	вариантов использования с детализацией основных сценариев: валидация публикации по ISSN и дате, валидация публикации с использованием 
+% 	DOI и метаданных из CrossRef API, загрузка новой версии перечня ВАК, просмотр истории валидаций. Описаны отношения между 
+% 	вариантами использования (include, extend) и их связь с функциональными требованиями системы.
+% \end{annotation}
